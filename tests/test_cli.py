@@ -17,7 +17,7 @@ def runner():
 @pytest.fixture
 def sample_image_path():
     """Provide path to test image."""
-    return str(Path(__file__).parent / "sample.jpg")
+    return str(Path(__file__).parent / "sample_dog.jpg")
 
 
 def test_help(runner):
@@ -35,26 +35,8 @@ def test_predict_cli(runner, sample_image_path):
     assert "Predicted class:" in result.output
 
 
-def test_predict_cli_with_custom_classes(runner, sample_image_path):
-    """Tests predict with custom class names."""
-    result = runner.invoke(
-        cli,
-        ["inference", "predict", sample_image_path, "--class-names", "cat,dog"],
-    )
+def test_predict_cli_nonexistent_file(runner):
+    """Tests predict with non-existent file."""
+    result = runner.invoke(cli, ["inference", "predict", "nonexistent.jpg"])
     assert result.exit_code == 0
-    assert "Predicted class:" in result.output
-
-
-# Testing of the resize_cli of the transform group
-def test_resize_cli(runner, sample_image_path):
-    """Tests the command-line interface resize command."""
-    result = runner.invoke(cli, ["transform", "resize", sample_image_path, "32", "32"])
-    assert result.exit_code == 0
-    assert "32" in result.output
-
-
-def test_resize_cli_invalid_width(runner, sample_image_path):
-    """Tests resize with invalid width."""
-    result = runner.invoke(cli, ["transform", "resize", sample_image_path, "0", "32"])
-    assert result.exit_code == 0
-    assert "Error" in result.output
+    assert "Error:" in result.output

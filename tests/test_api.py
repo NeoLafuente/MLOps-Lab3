@@ -18,7 +18,7 @@ def client():
 @pytest.fixture
 def sample_image_bytes():
     """Create a sample image in memory for testing."""
-    img = Image.new('RGB', (100, 100), color='red')
+    img = Image.new('RGB', (224, 224), color='red')
     img_bytes = io.BytesIO()
     img.save(img_bytes, format='JPEG')
     img_bytes.seek(0)
@@ -32,17 +32,16 @@ def test_home_endpoint(client):
     assert "text/html" in response.headers["content-type"]
 
 
-def test_predict(client, sample_image_bytes):
+def test_predict(client, sample_dog_bytes):
     """Verify that the endpoint /predict performs the class prediction correctly."""
     response = client.post(
         "/predict",
-        files={"file": ("test.jpg", sample_image_bytes, "image/jpeg")},
-        data={"class_names": "cat,dog,bird"}
+        files={"file": ("sample_dog.jpg", sample_dog_bytes, "image/jpeg")}
     )
     assert response.status_code == 200
     data = response.json()
+
     assert "predicted_class" in data
-    assert data["predicted_class"] in ["cat", "dog", "bird"]
 
 
 def test_predict_invalid_file(client):
@@ -55,52 +54,117 @@ def test_predict_invalid_file(client):
     data = response.json()
     assert "detail" in data
 
+def test_prediction_deterministic(client, sample_dog_bytes):
+    """Test that same image produces same prediction."""
+    # Make first prediction
+    response1 = client.post(
+        "/predict",
+        files={"file": ("sample_dog.jpg", sample_dog_bytes, "image/jpeg")}
+    )
+    prediction1 = response1.json()["predicted_class"]
+    
+    # Make second prediction with same image
+    response2 = client.post(
+        "/predict",
+        files={"file": ("sample_dog.jpg", sample_dog_bytes, "image/jpeg")}
+    )
+    prediction2 = response2.json()["predicted_class"]
+    
+    assert prediction1 == prediction2
 
-def test_resize(client, sample_image_bytes):
-    """Verify that the endpoint /resize performs the image resize correctly."""
+def test_predict_both_classes(client, sample_dog_bytes, sample_cat_bytes):
+    """Verify that the endpoint /predict performs the class prediction correctly."""
     response = client.post(
-        "/resize",
-        files={"file": ("test.jpg", sample_image_bytes, "image/jpeg")},
-        data={"width": "32", "height": "32"}
+        "/predict",
+        files={"file": ("sample_dog.jpg", sample_dog_bytes, "image/jpeg")}
     )
     assert response.status_code == 200
     data = response.json()
-    assert "resized_dimensions" in data
-    assert data["resized_dimensions"] == [32, 32]
+    assert data.get("predicted_class") == "dog"
 
-
-def test_resize_invalid_width(client, sample_image_bytes):
-    """Verify that the endpoint /resize manages correctly invalid widths."""
     response = client.post(
-        "/resize",
-        files={"file": ("test.jpg", sample_image_bytes, "image/jpeg")},
-        data={"width": "0", "height": "32"}
+        "/predict",
+        files={"file": ("sample_cat.jpg", sample_cat_bytes, "image/jpeg")}
     )
-    assert response.status_code == 400
+    assert response.status_code == 200
     data = response.json()
-    assert "detail" in data
-    assert "'width' must be a positive value" in data["detail"]
+    assert data.get("predicted_class") == "cat"
+
+def test_different_image_sizes(client):
+    """Test that the API handles different image sizes correctly."""
+    sizes = [(100, 100), (224, 224), (500, 500), (1920, 1080)]
+    
+    for width, height in sizes:
+        # Create image of specific size
+        img = Image.new('RGB', (width, height), color=(100, 100, 100))
+        img_bytes = io.BytesIO()
+        img.save(img_bytes, format='JPEG')
+        img_bytes.seek(0)
+        
+        response = client.post(
+            "/predict",
+            files={"file": (f"test_{width}x{height}.jpg", img_bytes, "image/jpeg")}
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert "predicted_class" in data
 
 
-def test_resize_invalid_height(client, sample_image_bytes):
-    """Verify that the endpoint /resize manages correctly invalid heights."""
+def test_different_image_formats(client):
+    """Test that the API handles different image formats (JPEG, PNG, TIFF)."""
+    formats = ['JPEG', 'PNG', 'TIFF']
+    
+    for fmt in formats:
+        img = Image.new('RGB', (224, 224), color=(100, 100, 100))
+        img_bytes = io.BytesIO()
+        img.save(img_bytes, format=fmt)
+        img_bytes.seek(0)
+        
+        extension = fmt.lower()
+        mime_type = f"image/{extension}"
+        
+        response = client.post(
+            "/predict",
+            files={"file": (f"test.{extension}", img_bytes, mime_type)}
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert "predicted_class" in data
+
+
+def test_grayscale_image_conversion(client):
+    """Test that grayscale images are converted to RGB correctly."""
+    # Create grayscale image
+    img = Image.new('L', (224, 224), color=128)
+    img_bytes = io.BytesIO()
+    img.save(img_bytes, format='JPEG')
+    img_bytes.seek(0)
+    
     response = client.post(
-        "/resize",
-        files={"file": ("test.jpg", sample_image_bytes, "image/jpeg")},
-        data={"width": "32", "height": "0"}
+        "/predict",
+        files={"file": ("test.jpg", img_bytes, "image/jpeg")}
     )
-    assert response.status_code == 400
+
+    assert response.status_code == 200
     data = response.json()
-    assert "detail" in data
-    assert "'height' must be a positive value" in data["detail"]
+    assert "predicted_class" in data
 
 
-def test_resize_invalid_parameters(client):
-    """Verify that the endpoint /resize manages correctly missing parameters."""
+def test_rgba_image_conversion(client):
+    """Test that RGBA images are converted to RGB correctly."""
+    # Create RGBA image (with alpha channel)
+    img = Image.new('RGBA', (224, 224), color=(100, 100, 100, 255))
+    img_bytes = io.BytesIO()
+    img.save(img_bytes, format='PNG')
+    img_bytes.seek(0)
+    
     response = client.post(
-        "/resize",
-        data={"width": "32", "height": "32"}
+        "/predict",
+        files={"file": ("test.png", img_bytes, "image/png")}
     )
-    assert response.status_code == 422  # FastAPI returns 422 for validation errors
+
+    assert response.status_code == 200
     data = response.json()
-    assert "detail" in data
+    assert "predicted_class" in data
