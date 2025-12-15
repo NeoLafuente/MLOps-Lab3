@@ -1,5 +1,5 @@
 ---
-title: Mlops Labs 1 3
+title: Mlops Lab 3
 emoji: 🦀
 colorFrom: yellow
 colorTo: red
