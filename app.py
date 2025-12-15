@@ -1,5 +1,6 @@
 import gradio as gr
 import requests
+import cv2
 
 # URL of the API created with FastAPI
 API_URL = "https://lab3-nuj8.onrender.com"
