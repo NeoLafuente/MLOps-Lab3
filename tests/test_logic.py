@@ -4,7 +4,7 @@ Unit Testing of the application's logic
 import pytest
 from pathlib import Path
 from PIL import Image
-from mylib.classifier import PetClassifier, predict
+from mylib.classifier import CatsAndDogsClassifier, predict
 
 
 @pytest.fixture
@@ -18,7 +18,7 @@ def sample_image_path(tmp_path):
 @pytest.fixture
 def classifier():
     """Create a classifier instance for testing."""
-    return PetClassifier()
+    return CatsAndDogsClassifier()
 
 def test_classifier_initialization(classifier):
     """Test that classifier initializes correctly."""
