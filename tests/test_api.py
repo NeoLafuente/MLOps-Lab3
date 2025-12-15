@@ -18,7 +18,7 @@ def client():
 @pytest.fixture
 def sample_image_bytes():
     """Create a sample image in memory for testing."""
-    img = Image.new('RGB', (224, 224), color='red')
+    img = Image.new('RGB', (224, 224), color='blue')
     img_bytes = io.BytesIO()
     img.save(img_bytes, format='JPEG')
     img_bytes.seek(0)
@@ -32,11 +32,11 @@ def test_home_endpoint(client):
     assert "text/html" in response.headers["content-type"]
 
 
-def test_predict(client, sample_dog_bytes):
+def test_predict(client, sample_image_bytes):
     """Verify that the endpoint /predict performs the class prediction correctly."""
     response = client.post(
         "/predict",
-        files={"file": ("sample_dog.jpg", sample_dog_bytes, "image/jpeg")}
+        files={"file": ("sample_img.jpg", sample_image_bytes, "image/jpeg")}
     )
     assert response.status_code == 200
     data = response.json()
@@ -54,37 +54,47 @@ def test_predict_invalid_file(client):
     data = response.json()
     assert "detail" in data
 
-def test_prediction_deterministic(client, sample_dog_bytes):
+def test_prediction_deterministic(client, sample_image_bytes):
     """Test that same image produces same prediction."""
     # Make first prediction
     response1 = client.post(
         "/predict",
-        files={"file": ("sample_dog.jpg", sample_dog_bytes, "image/jpeg")}
+        files={"file": ("sample_img.jpg", sample_image_bytes, "image/jpeg")}
     )
     prediction1 = response1.json()["predicted_class"]
     
     # Make second prediction with same image
     response2 = client.post(
         "/predict",
-        files={"file": ("sample_dog.jpg", sample_dog_bytes, "image/jpeg")}
+        files={"file": ("sample_img.jpg", sample_image_bytes, "image/jpeg")}
     )
     prediction2 = response2.json()["predicted_class"]
     
     assert prediction1 == prediction2
 
-def test_predict_both_classes(client, sample_dog_bytes, sample_cat_bytes):
+def test_predict_both_classes(client):
     """Verify that the endpoint /predict performs the class prediction correctly."""
+    # Read dog image
+    dog_path = Path("sample_dog.jpg")
+    with dog_path.open("rb") as f:
+        dog_bytes = f.read()
+    
     response = client.post(
         "/predict",
-        files={"file": ("sample_dog.jpg", sample_dog_bytes, "image/jpeg")}
+        files={"file": ("sample_dog.jpg", dog_bytes, "image/jpeg")}
     )
     assert response.status_code == 200
     data = response.json()
     assert data.get("predicted_class") == "dog"
-
+    
+    # Read cat image
+    cat_path = Path("sample_cat.jpg")
+    with cat_path.open("rb") as f:
+        cat_bytes = f.read()
+    
     response = client.post(
         "/predict",
-        files={"file": ("sample_cat.jpg", sample_cat_bytes, "image/jpeg")}
+        files={"file": ("sample_cat.jpg", cat_bytes, "image/jpeg")}
     )
     assert response.status_code == 200
     data = response.json()
