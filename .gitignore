@@ -205,3 +205,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# From notebooks we only want the .py and .ipynb files
+notebooks/**
+!notebooks/*.py
+!notebooks/*.ipynb
