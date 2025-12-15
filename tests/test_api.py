@@ -75,7 +75,7 @@ def test_prediction_deterministic(client, sample_image_bytes):
 def test_predict_both_classes(client):
     """Verify that the endpoint /predict performs the class prediction correctly."""
     # Read dog image
-    dog_path = Path("sample_dog.jpg")
+    dog_path = Path("tests/sample_dog.jpg")
     with dog_path.open("rb") as f:
         dog_bytes = f.read()
     
@@ -88,7 +88,7 @@ def test_predict_both_classes(client):
     assert data.get("predicted_class") == "dog"
     
     # Read cat image
-    cat_path = Path("sample_cat.jpg")
+    cat_path = Path("tests/sample_cat.jpg")
     with cat_path.open("rb") as f:
         cat_bytes = f.read()
     
