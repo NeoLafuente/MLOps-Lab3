@@ -1,4 +1,4 @@
-[![CI](https://github.com/NeoLafuente/MLOps-Lab3/actions/workflows/CI.yml/badge.svg)](https://github.com/NeoLafuente/MLOps-Lab3/actions/workflows/CI.yml)
+[![CI](https://github.com/NeoLafuente/MLOps-Lab3/actions/workflows/CICD.yml/badge.svg)](https://github.com/NeoLafuente/MLOps-Lab3/actions/workflows/CICD.yml)
 
 # MLOps Lab 1–3
 
@@ -16,7 +16,7 @@ This repository contains material and code developed across Labs 1–3 of an MLO
 
 ```
 .
-├── .github/           # CI workflows and automation configuration
+├── .github/           # CICD workflows and automation configuration
 ├── .gitignore         # Ignore patterns for Git
 ├── .python-version    # Pinned Python version (for pyenv / uv)
 ├── LICENSE            # Project license

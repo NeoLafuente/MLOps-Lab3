@@ -40,6 +40,7 @@ COPY api ./api
 COPY mylib ./mylib
 COPY templates ./templates
 COPY pyproject.toml ./pyproject.toml
+COPY model_in_production ./model_in_production
 
 # Create non-root user
 RUN useradd --create-home appuser && chown -R appuser:appuser /app
